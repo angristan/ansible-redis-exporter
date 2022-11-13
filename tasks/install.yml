@@ -1,0 +1,48 @@
+---
+- name: Create the redis_exporter group
+  ansible.builtin.group:
+    name: "{{ redis_exporter_system_group }}"
+    state: present
+    system: true
+  when: redis_exporter_system_group != "root"
+
+- name: Create the redis_exporter user
+  ansible.builtin.user:
+    name: "{{ redis_exporter_system_user }}"
+    groups: "{{ redis_exporter_system_group }}"
+    append: true
+    shell: /usr/sbin/nologin
+    system: true
+    createhome: false
+    home: /
+  when: redis_exporter_system_user != "root"
+
+- name: Download the redis_exporter binary to a local folder
+  ansible.builtin.get_url:
+    url: "https://github.com/oliver006/redis_exporter/releases/download/v{{ redis_exporter_version }}/redis_exporter-v{{ redis_exporter_version }}.linux-{{ go_arch_map[ansible_architecture] | default(ansible_architecture) }}.tar.gz"
+    dest: "/tmp/redis_exporter-{{ redis_exporter_version }}.linux-{{ go_arch_map[ansible_architecture] | default(ansible_architecture) }}.tar.gz"
+    mode: 0644
+  register: _download_binary
+  until: _download_binary is succeeded
+  retries: 5
+  delay: 2
+  delegate_to: localhost
+  check_mode: false
+
+- name: Unarchive the redis_exporter binary
+  ansible.builtin.unarchive:
+    src: "/tmp/redis_exporter-{{ redis_exporter_version }}.linux-{{ go_arch_map[ansible_architecture] | default(ansible_architecture) }}.tar.gz"
+    dest: "/tmp"
+    creates: "/tmp/redis_exporter-v{{ redis_exporter_version }}.linux-{{ go_arch_map[ansible_architecture] | default(ansible_architecture) }}/redis_exporter"
+  delegate_to: localhost
+  check_mode: false
+
+- name: Upload the redis_exporter binary
+  ansible.builtin.copy:
+    src: "/tmp/redis_exporter-v{{ redis_exporter_version }}.linux-{{ go_arch_map[ansible_architecture] | default(ansible_architecture) }}/redis_exporter"
+    dest: "/usr/local/bin/redis_exporter"
+    mode: 0750
+    owner: "{{ redis_exporter_system_user }}"
+    group: "{{ redis_exporter_system_group }}"
+  notify: restart redis_exporter
+  when: not ansible_check_mode

@@ -1,0 +1,6 @@
+---
+redis_exporter_version: 1.45.0
+redis_exporter_force_install: false
+redis_exporter_web_listen_address: "0.0.0.0:9121"
+redis_exporter_system_group: "redis-exporter"
+redis_exporter_system_user: "{{ redis_exporter_system_group }}"

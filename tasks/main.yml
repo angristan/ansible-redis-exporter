@@ -1,0 +1,21 @@
+---
+- name: Check if redis_exporter is installed
+  ansible.builtin.stat:
+    path: "/usr/local/bin/redis_exporter"
+  register: redis_exporter_binary
+
+- name: Install redis_exporter
+  ansible.builtin.include_tasks: install.yml
+  when: not redis_exporter_binary.stat.exists or redis_exporter_force_install
+
+- name: Configure redis_exporter
+  ansible.builtin.import_tasks: configure.yml
+  tags:
+    - redis_exporter.configure
+
+- name: Ensure Redis Exporter is enabled on boot
+  ansible.builtin.systemd:
+    daemon_reload: true
+    name: redis-exporter
+    enabled: true
+    state: started
