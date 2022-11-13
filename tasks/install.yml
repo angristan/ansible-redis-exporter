@@ -44,5 +44,5 @@
     mode: 0750
     owner: "{{ redis_exporter_system_user }}"
     group: "{{ redis_exporter_system_group }}"
-  notify: restart redis_exporter
+  notify: Restart redis_exporter
   when: not ansible_check_mode
